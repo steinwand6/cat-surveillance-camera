@@ -8,16 +8,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut pir = Gpio::new()?.get(GPIO17)?.into_input();
     pir.set_interrupt(rppal::gpio::Trigger::Both)?;
 
+    let image_dir = "/tmp/cat-sv";
+
     loop {
         match pir.poll_interrupt(true, None) {
             Ok(trigger) => match trigger {
                 Some(Level::High) => {
                     let dt = Local::now();
+                    let file_name =
+                        format!("{}/image_{}.jpg", image_dir, dt.format("%Y%m%d%H%M%S"));
                     Command::new("libcamera-jpeg")
-                        .args([
-                            "-o",
-                            format!("image_{}.jpg", dt.format("%Y%m%d%H%M%S")).as_str(),
-                        ])
+                        .args(["-o", file_name.as_str()])
                         .output()?;
                     println!("!!");
                 }
