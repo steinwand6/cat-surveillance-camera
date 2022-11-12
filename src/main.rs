@@ -1,3 +1,4 @@
+use chrono::Local;
 use rppal::gpio::{Gpio, Level};
 use std::{error::Error, process::Command};
 
@@ -11,8 +12,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         match pir.poll_interrupt(true, None) {
             Ok(trigger) => match trigger {
                 Some(Level::High) => {
+                    let dt = Local::now();
                     Command::new("libcamera-jpeg")
-                        .args(["-o", "cat.jpg"])
+                        .args([
+                            "-o",
+                            format!("image_{}.jpg", dt.format("%Y%m%d%H%M%S")).as_str(),
+                        ])
                         .output()?;
                     println!("!!");
                 }
