@@ -1,6 +1,5 @@
-use rppal::gpio::{Gpio, InputPin, Level, OutputPin};
-use std::error::Error;
-use std::sync::atomic::{AtomicBool, Ordering};
+use rppal::gpio::{Gpio, Level};
+use std::{error::Error, process::Command};
 
 const GPIO17: u8 = 17;
 
@@ -11,13 +10,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     loop {
         match pir.poll_interrupt(true, None) {
             Ok(trigger) => match trigger {
-                Some(rppal::gpio::Level::High) => {
+                Some(Level::High) => {
+                    Command::new("libcamera-jpeg")
+                        .args(["-o", "cat.jpg"])
+                        .output()?;
                     println!("!!");
                 }
-                Some(rppal::gpio::Level::Low) => {
-                    println!("...");
-                }
-                None => (),
+                _ => (),
             },
             _ => break,
         }
