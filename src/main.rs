@@ -27,15 +27,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                     let client = Client::new();
                     let form = multipart::Form::new()
                         .text("message", "Detected")
-                        .text("imageFile", format!("@/{}", file_name));
-                    let _ = client
+                        .file("imageFile", format!("@/{}", file_name))?;
+                    let req = client
                         .post("https://notify-api.line.me/api/notify")
-                        .header(
-                            reqwest::header::AUTHORIZATION,
-                            format!("bearer {}", line_token),
-                        )
-                        .multipart(form)
-                        .send();
+                        .bearer_auth(&line_token)
+                        .multipart(form);
+                    let res = req.send()?;
+                    println!("{:?}", res);
                 }
                 _ => (),
             },
