@@ -27,7 +27,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     let client = Client::new();
                     let form = multipart::Form::new()
                         .text("message", "Detected")
-                        .file("imageFile", format!("@/{}", file_name))?;
+                        .file("imageFile", file_name)?;
                     let req = client
                         .post("https://notify-api.line.me/api/notify")
                         .bearer_auth(&line_token)
