@@ -6,6 +6,8 @@ use std::{env, error::Error, io::ErrorKind, process::Command};
 const GPIO17: u8 = 17;
 
 fn main() -> Result<(), Box<dyn Error>> {
+    env_logger::init();
+
     let mut pir = Gpio::new()?.get(GPIO17)?.into_input();
     pir.set_interrupt(rppal::gpio::Trigger::RisingEdge)?;
 
@@ -16,7 +18,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     match std::fs::create_dir(image_dir) {
         Err(e) if e.kind() == ErrorKind::AlreadyExists => println!("{:?}", e),
         Err(e) => {
-            println!("{:?}", e);
+            log::error!("{}", e);
             return Err(Box::new(e));
         }
         Ok(_) => (),
@@ -30,7 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Command::new("libcamera-jpeg")
                     .args(["-o", file_name.as_str()])
                     .output()?;
-                println!("!!");
+                log::info!("snap: {}", file_name);
                 let client = Client::new();
                 let form = multipart::Form::new()
                     .text("message", "Detected")
@@ -40,7 +42,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     .bearer_auth(&line_token)
                     .multipart(form);
                 let res = req.send()?;
-                println!("{:?}", res);
+                log::info!("response: {:?}", res);
             }
             _ => break,
         }
