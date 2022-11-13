@@ -1,7 +1,7 @@
 use chrono::Local;
 use reqwest::blocking::{multipart, Client};
 use rppal::gpio::Gpio;
-use std::{env, error::Error, process::Command};
+use std::{env, error::Error, io::ErrorKind, process::Command};
 
 const GPIO17: u8 = 17;
 
@@ -12,6 +12,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     let line_token =
         env::var("LINE_TOKEN").expect("LINE_TOKEN is empty. Set the access token to LINE_TOKEN");
     let image_dir = "/tmp/cat-sv";
+
+    match std::fs::create_dir(image_dir) {
+        Err(e) if e.kind() == ErrorKind::AlreadyExists => println!("{:?}", e),
+        Err(e) => {
+            println!("{:?}", e);
+            return Err(Box::new(e));
+        }
+        Ok(_) => (),
+    }
 
     loop {
         match pir.poll_interrupt(true, None) {
