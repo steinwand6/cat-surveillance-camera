@@ -44,8 +44,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let res = req.send()?;
                 log::info!("response: {:?}", res);
             }
-            _ => break,
+            e => log::error!("{:?}", e),
         }
     }
-    Ok(())
 }
