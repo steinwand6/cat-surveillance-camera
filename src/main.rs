@@ -16,7 +16,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let image_dir = "/tmp/cat-sv";
 
     match std::fs::create_dir(image_dir) {
-        Err(e) if e.kind() == ErrorKind::AlreadyExists => println!("{:?}", e),
+        Err(e) if e.kind() == ErrorKind::AlreadyExists => log::info!("{}", e),
         Err(e) => {
             log::error!("{}", e);
             return Err(Box::new(e));
