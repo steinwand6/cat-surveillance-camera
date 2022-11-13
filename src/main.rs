@@ -1,5 +1,5 @@
 use chrono::Local;
-use reqwest::blocking::Client;
+use reqwest::blocking::{multipart, Client};
 use rppal::gpio::{Gpio, Level};
 use std::{env, error::Error, process::Command};
 
@@ -11,7 +11,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let line_token =
         env::var("LINE_TOKEN").expect("LINE_TOKEN is empty. Set the access token to LINE_TOKEN");
-
     let image_dir = "/tmp/cat-sv";
 
     loop {
@@ -26,13 +25,16 @@ fn main() -> Result<(), Box<dyn Error>> {
                         .output()?;
                     println!("!!");
                     let client = Client::new();
+                    let form = multipart::Form::new()
+                        .text("message", "Detected")
+                        .text("imageFile", format!("@/{}", file_name));
                     let _ = client
                         .post("https://notify-api.line.me/api/notify")
                         .header(
                             reqwest::header::AUTHORIZATION,
                             format!("bearer {}", line_token),
                         )
-                        .body(format!("message=Detected! imageFiles=@{}", file_name))
+                        .multipart(form)
                         .send();
                 }
                 _ => (),
