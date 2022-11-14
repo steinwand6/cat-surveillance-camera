@@ -40,7 +40,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                         "-o",
                         file_name.as_str(),
                         "--nopreview",
-                        "-ev",
+                        "--ev",
                         &ev,
                         "--shutter",
                         &shutter,
