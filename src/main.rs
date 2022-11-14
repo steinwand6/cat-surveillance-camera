@@ -29,10 +29,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             Ok(_) => {
                 let dt = Local::now();
                 let file_name = format!("{}/image_{}.jpg", image_dir, dt.format("%Y%m%d%H%M%S"));
+
                 Command::new("libcamera-jpeg")
                     .args(["-o", file_name.as_str()])
                     .output()?;
                 log::info!("snap: {}", file_name);
+
                 let client = Client::new();
                 let form = multipart::Form::new()
                     .text("message", "Detected")
@@ -41,6 +43,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     .post("https://notify-api.line.me/api/notify")
                     .bearer_auth(&line_token)
                     .multipart(form);
+
                 let res = req.send()?;
                 log::info!("response: {:?}", res);
             }
