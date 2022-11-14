@@ -60,28 +60,22 @@ fn main() -> Result<(), Box<dyn Error>> {
                     .file("imageFile", file_name);
                 if let Err(e) = form {
                     log::error!("{}", e);
-                    let req = client
-                        .post(LINE_NOTIFY_API)
-                        .body("detected, but failed to something.")
-                        .bearer_auth(&line_token);
-                    match req.send() {
-                        Ok(res) => log::info!("{:?}", res),
-                        Err(e) => log::error!("{}", e),
-                    }
-                    continue;
+                    unreachable!()
                 }
 
                 let req = client
                     .post(LINE_NOTIFY_API)
                     .bearer_auth(&line_token)
                     .multipart(form.unwrap());
-
                 match req.send() {
                     Ok(res) => log::info!("{:?}", res),
                     Err(e) => log::error!("{}", e),
                 }
             }
-            e => log::error!("{:?}", e),
+            e => {
+                log::error!("{:?}", e);
+                unreachable!()
+            }
         }
     }
 }
