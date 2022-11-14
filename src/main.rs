@@ -28,6 +28,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     let shutter = 2000000.to_string();
     let width = 1600.to_string();
     let height = 900.to_string();
+    let libcam_args = [
+        "--nopreview",
+        "--ev",
+        &ev,
+        "--shutter",
+        &shutter,
+        "--width",
+        &width,
+        "--height",
+        &height,
+    ];
 
     loop {
         match pir.poll_interrupt(true, None) {
@@ -39,19 +50,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let file_name = format!("{}/image_{}.jpg", image_dir, dt.format("%Y%m%d%H%M%S"));
 
                 let libcam = Command::new("libcamera-jpeg")
-                    .args([
-                        "-o",
-                        file_name.as_str(),
-                        "--nopreview",
-                        "--ev",
-                        &ev,
-                        "--shutter",
-                        &shutter,
-                        "--width",
-                        &width,
-                        "--height",
-                        &height,
-                    ])
+                    .args(["-o", file_name.as_str()])
+                    .args(libcam_args)
                     .output();
 
                 if let Err(e) = libcam {
@@ -75,7 +75,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     log::error!("{}", e);
                     let req = client
                         .post("https://notify-api.line.me/api/notify")
-                        .body("detected, but failed to snap.")
+                        .body("detected, but failed to something.")
                         .bearer_auth(&line_token);
                     match req.send() {
                         Ok(res) => log::info!("{:?}", res),
