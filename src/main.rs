@@ -24,6 +24,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         Ok(_) => (),
     }
 
+    let ev = 0.5.to_string();
+    let shutter = 2000000.to_string();
+    let width = 1600.to_string();
+    let height = 900.to_string();
+
     loop {
         match pir.poll_interrupt(true, None) {
             Ok(_) => {
@@ -31,7 +36,19 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let file_name = format!("{}/image_{}.jpg", image_dir, dt.format("%Y%m%d%H%M%S"));
 
                 Command::new("libcamera-jpeg")
-                    .args(["-o", file_name.as_str()])
+                    .args([
+                        "-o",
+                        file_name.as_str(),
+                        "--nopreview",
+                        "-ev",
+                        &ev,
+                        "--shutter",
+                        &shutter,
+                        "--width",
+                        &width,
+                        "--height",
+                        &height,
+                    ])
                     .output()?;
                 log::info!("snap: {}", file_name);
 
