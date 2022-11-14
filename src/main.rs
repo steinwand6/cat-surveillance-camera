@@ -4,9 +4,12 @@ use rppal::gpio::Gpio;
 use std::{env, error::Error, io::ErrorKind, process::Command};
 
 const GPIO17: u8 = 17;
+const LINE_NOTIFY_API: &str = "https://notify-api.line.me/api/notify";
 
 fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
+
+    log::info!("start!");
 
     let mut pir = Gpio::new()?.get(GPIO17)?.into_input();
     pir.set_interrupt(rppal::gpio::Trigger::RisingEdge)?;
@@ -24,22 +27,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         Ok(_) => (),
     }
 
-    let ev = 0.5.to_string();
-    let shutter = 2000000.to_string();
-    let width = 1600.to_string();
-    let height = 900.to_string();
-    let libcam_args = [
-        "--nopreview",
-        "--ev",
-        &ev,
-        "--shutter",
-        &shutter,
-        "--width",
-        &width,
-        "--height",
-        &height,
-    ];
-
     loop {
         match pir.poll_interrupt(true, None) {
             Ok(_) => {
@@ -51,13 +38,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                 let libcam = Command::new("libcamera-jpeg")
                     .args(["-o", file_name.as_str()])
-                    .args(libcam_args)
+                    .args(get_options())
                     .output();
 
                 if let Err(e) = libcam {
                     log::error!("{}", e);
                     let req = client
-                        .post("https://notify-api.line.me/api/notify")
+                        .post(LINE_NOTIFY_API)
                         .body("detected, but failed to snap.")
                         .bearer_auth(&line_token);
                     match req.send() {
@@ -74,7 +61,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 if let Err(e) = form {
                     log::error!("{}", e);
                     let req = client
-                        .post("https://notify-api.line.me/api/notify")
+                        .post(LINE_NOTIFY_API)
                         .body("detected, but failed to something.")
                         .bearer_auth(&line_token);
                     match req.send() {
@@ -85,7 +72,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
 
                 let req = client
-                    .post("https://notify-api.line.me/api/notify")
+                    .post(LINE_NOTIFY_API)
                     .bearer_auth(&line_token)
                     .multipart(form.unwrap());
 
@@ -97,4 +84,23 @@ fn main() -> Result<(), Box<dyn Error>> {
             e => log::error!("{:?}", e),
         }
     }
+}
+
+fn get_options() -> Vec<String> {
+    let ev = 0.5.to_string();
+    let shutter = 2000000.to_string();
+    let width = 1600.to_string();
+    let height = 900.to_string();
+    let libcam_args = [
+        "--nopreview",
+        "--ev",
+        &ev,
+        "--shutter",
+        &shutter,
+        "--width",
+        &width,
+        "--height",
+        &height,
+    ];
+    libcam_args.map(|e| e.to_string()).to_vec()
 }
