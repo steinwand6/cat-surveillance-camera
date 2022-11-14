@@ -32,10 +32,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     loop {
         match pir.poll_interrupt(true, None) {
             Ok(_) => {
+                log::info!("Detect someone!");
+
+                let client = Client::new();
                 let dt = Local::now();
                 let file_name = format!("{}/image_{}.jpg", image_dir, dt.format("%Y%m%d%H%M%S"));
 
-                Command::new("libcamera-jpeg")
+                let libcam = Command::new("libcamera-jpeg")
                     .args([
                         "-o",
                         file_name.as_str(),
@@ -49,20 +52,47 @@ fn main() -> Result<(), Box<dyn Error>> {
                         "--height",
                         &height,
                     ])
-                    .output()?;
+                    .output();
+
+                if let Err(e) = libcam {
+                    log::error!("{}", e);
+                    let req = client
+                        .post("https://notify-api.line.me/api/notify")
+                        .body("detected, but failed to snap.")
+                        .bearer_auth(&line_token);
+                    match req.send() {
+                        Ok(res) => log::info!("{:?}", res),
+                        Err(e) => log::error!("{}", e),
+                    }
+                    continue;
+                }
                 log::info!("snap: {}", file_name);
 
-                let client = Client::new();
                 let form = multipart::Form::new()
                     .text("message", "Detected")
-                    .file("imageFile", file_name)?;
+                    .file("imageFile", file_name);
+                if let Err(e) = form {
+                    log::error!("{}", e);
+                    let req = client
+                        .post("https://notify-api.line.me/api/notify")
+                        .body("detected, but failed to snap.")
+                        .bearer_auth(&line_token);
+                    match req.send() {
+                        Ok(res) => log::info!("{:?}", res),
+                        Err(e) => log::error!("{}", e),
+                    }
+                    continue;
+                }
+
                 let req = client
                     .post("https://notify-api.line.me/api/notify")
                     .bearer_auth(&line_token)
-                    .multipart(form);
+                    .multipart(form.unwrap());
 
-                let res = req.send()?;
-                log::info!("response: {:?}", res);
+                match req.send() {
+                    Ok(res) => log::info!("{:?}", res),
+                    Err(e) => log::error!("{}", e),
+                }
             }
             e => log::error!("{:?}", e),
         }
