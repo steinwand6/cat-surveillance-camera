@@ -36,24 +36,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let dt = Local::now();
                 let file_name = format!("{}/image_{}.jpg", image_dir, dt.format("%Y%m%d%H%M%S"));
 
-                let libcam = Command::new("libcamera-jpeg")
-                    .args(["-o", file_name.as_str()])
-                    .args(get_options())
-                    .output();
-
-                if let Err(e) = libcam {
-                    log::error!("{}", e);
-                    let req = client
-                        .post(LINE_NOTIFY_API)
-                        .body("detected, but failed to snap.")
-                        .bearer_auth(&line_token);
-                    match req.send() {
-                        Ok(res) => log::info!("{:?}", res),
-                        Err(e) => log::error!("{}", e),
-                    }
+                if let Err(_) = libcam(&file_name, &line_token) {
                     continue;
                 }
-                log::info!("snap: {}", file_name);
 
                 let form = multipart::Form::new()
                     .text("message", "Detected")
@@ -78,6 +63,29 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
     }
+}
+
+fn libcam(file_name: &str, line_token: &str) -> Result<(), std::io::Error> {
+    let client = Client::new();
+    let libcam = Command::new("libcamera-jpeg")
+        .args(["-o", file_name])
+        .args(get_options())
+        .output();
+
+    if let Err(e) = libcam {
+        log::error!("{}", e);
+        let req = client
+            .post(LINE_NOTIFY_API)
+            .body("detected, but failed to snap.")
+            .bearer_auth(&line_token);
+        match req.send() {
+            Ok(res) => log::info!("{:?}", res),
+            Err(e) => log::error!("{}", e),
+        }
+        return Err(e);
+    }
+    log::info!("snap: {}", file_name);
+    Ok(())
 }
 
 fn get_options() -> Vec<String> {
