@@ -32,36 +32,39 @@ fn main() -> Result<(), Box<dyn Error>> {
             Ok(_) => {
                 log::info!("Detect someone!");
 
-                let client = Client::new();
                 let dt = Local::now();
                 let file_name = format!("{}/image_{}.jpg", image_dir, dt.format("%Y%m%d%H%M%S"));
 
                 if let Err(_) = libcam(&file_name, &line_token) {
                     continue;
                 }
-
-                let form = multipart::Form::new()
-                    .text("message", "Detected")
-                    .file("imageFile", file_name);
-                if let Err(e) = form {
-                    log::error!("{}", e);
-                    unreachable!()
-                }
-
-                let req = client
-                    .post(LINE_NOTIFY_API)
-                    .bearer_auth(&line_token)
-                    .multipart(form.unwrap());
-                match req.send() {
-                    Ok(res) => log::info!("{:?}", res),
-                    Err(e) => log::error!("{}", e),
-                }
+                send_line_notify(&file_name, &line_token);
             }
             e => {
                 log::error!("{:?}", e);
                 unreachable!()
             }
         }
+    }
+}
+
+fn send_line_notify(file_name: &str, line_token: &str) {
+    let client = Client::new();
+    let form = multipart::Form::new()
+        .text("message", "Detected")
+        .file("imageFile", file_name);
+    if let Err(e) = form {
+        log::error!("{}", e);
+        unreachable!()
+    }
+
+    let req = client
+        .post(LINE_NOTIFY_API)
+        .bearer_auth(&line_token)
+        .multipart(form.unwrap());
+    match req.send() {
+        Ok(res) => log::info!("{:?}", res),
+        Err(e) => log::error!("{}", e),
     }
 }
 
