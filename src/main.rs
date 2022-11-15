@@ -49,7 +49,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let result = libcam(&file_name);
                 log::info!("send a LINE Notify.");
                 match send_line_notify(result, &file_name, &line_token) {
-                    Ok(res) => log::info!("send LINE Notify status: {}", res.status()),
+                    Ok(res) => log::info!("status: {}", res.status()),
                     Err(e) => log::error!("{}", e),
                 }
             }
