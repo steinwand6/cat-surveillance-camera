@@ -130,6 +130,8 @@ fn get_options() -> Vec<String> {
         &width,
         "--height",
         &height,
+        "--brightness",
+        "0.2",
     ];
     libcam_args.map(|e| e.to_string()).to_vec()
 }
