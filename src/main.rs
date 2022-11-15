@@ -2,9 +2,20 @@ use chrono::Local;
 use reqwest::blocking::{multipart, Client};
 use rppal::gpio::Gpio;
 use std::{env, error::Error, io::ErrorKind, process::Command};
+use thiserror::Error;
 
 const GPIO17: u8 = 17;
 const LINE_NOTIFY_API: &str = "https://notify-api.line.me/api/notify";
+
+#[derive(Error, Debug)]
+pub enum CatCamError {
+    #[error("Failed to send a request.")]
+    SendRequest,
+    #[error("Failed to libcamera.")]
+    FailureLibcamera,
+    #[error("Failed to create form.")]
+    CreateForm,
+}
 
 fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
