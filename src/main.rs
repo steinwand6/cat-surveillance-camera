@@ -46,10 +46,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let dt = Local::now();
                 let file_name = format!("{}/image_{}.jpg", image_dir, dt.format("%Y%m%d%H%M%S"));
 
-                if let Err(_) = libcam(&file_name, &line_token) {
-                    continue;
+                let result = libcam(&file_name);
+                log::info!("send a LINE Notify.");
+                match send_line_notify(result, &file_name, &line_token) {
+                    Ok(res) => log::info!("send LINE Notify status: {}", res.status()),
+                    Err(e) => log::error!("{}", e),
                 }
-                send_line_notify(&file_name, &line_token);
             }
             e => {
                 log::error!("{:?}", e);
@@ -59,46 +61,57 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 }
 
-fn send_line_notify(file_name: &str, line_token: &str) {
-    let client = Client::new();
-    let form = multipart::Form::new()
-        .text("message", "Detected")
-        .file("imageFile", file_name);
-    if let Err(e) = form {
-        log::error!("{}", e);
-        unreachable!()
-    }
+fn send_line_notify(
+    libcam_result: Result<(), CatCamError>,
+    file_name: &str,
+    line_token: &str,
+) -> Result<reqwest::blocking::Response, CatCamError> {
+    let client = Client::new().post(LINE_NOTIFY_API).bearer_auth(&line_token);
+    let result;
 
-    let req = client
-        .post(LINE_NOTIFY_API)
-        .bearer_auth(&line_token)
-        .multipart(form.unwrap());
-    match req.send() {
-        Ok(res) => log::info!("{:?}", res),
-        Err(e) => log::error!("{}", e),
+    match libcam_result {
+        Ok(_) => {
+            let form = multipart::Form::new()
+                .text("message", "Detected")
+                .file("imageFile", file_name);
+            let req;
+            match form {
+                Ok(_) => req = client.multipart(form.unwrap()),
+                Err(_) => {
+                    req = client
+                        .body("detected someone but something failed with creating request form.")
+                }
+            }
+            match req.send() {
+                Ok(res) => result = Ok(res),
+                Err(e) => {
+                    result = Err(CatCamError::SendRequest);
+                }
+            }
+        }
+        Err(_) => {
+            let req = client.body("detected someone, but failed to execute libcamera.");
+            match req.send() {
+                Ok(res) => result = Ok(res),
+                Err(e) => result = Err(CatCamError::SendRequest),
+            }
+        }
     }
+    result
 }
 
-fn libcam(file_name: &str, line_token: &str) -> Result<(), std::io::Error> {
-    let client = Client::new();
+fn libcam(file_name: &str) -> Result<(), CatCamError> {
     let libcam = Command::new("libcamera-jpeg")
         .args(["-o", file_name])
         .args(get_options())
         .output();
-
-    if let Err(e) = libcam {
-        log::error!("{}", e);
-        let req = client
-            .post(LINE_NOTIFY_API)
-            .body("detected, but failed to snap.")
-            .bearer_auth(&line_token);
-        match req.send() {
-            Ok(res) => log::info!("{:?}", res),
-            Err(e) => log::error!("{}", e),
+    match libcam {
+        Ok(_) => log::info!("libcamera-jpeg: {}", file_name),
+        Err(e) => {
+            log::error!("{:?}", e);
+            return Err(CatCamError::FailureLibcamera);
         }
-        return Err(e);
     }
-    log::info!("snap: {}", file_name);
     Ok(())
 }
 
