@@ -10,11 +10,9 @@ const LINE_NOTIFY_API: &str = "https://notify-api.line.me/api/notify";
 #[derive(Error, Debug)]
 pub enum CatCamError {
     #[error("Failed to send a request.")]
-    SendRequest,
+    SendRequest(#[source] reqwest::Error),
     #[error("Failed to libcamera.")]
     FailureLibcamera,
-    #[error("Failed to create form.")]
-    CreateForm,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -85,7 +83,7 @@ fn send_line_notify(
             match req.send() {
                 Ok(res) => result = Ok(res),
                 Err(e) => {
-                    result = Err(CatCamError::SendRequest);
+                    result = Err(CatCamError::SendRequest(e));
                 }
             }
         }
@@ -93,7 +91,7 @@ fn send_line_notify(
             let req = client.body("detected someone, but failed to execute libcamera.");
             match req.send() {
                 Ok(res) => result = Ok(res),
-                Err(e) => result = Err(CatCamError::SendRequest),
+                Err(e) => result = Err(CatCamError::SendRequest(e)),
             }
         }
     }
