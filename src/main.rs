@@ -12,7 +12,7 @@ pub enum CatCamError {
     #[error("Failed to send a request.")]
     SendRequest(#[source] reqwest::Error),
     #[error("Failed to libcamera.")]
-    FailureLibcamera,
+    FailureLibcamera(#[source] std::io::Error),
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -107,7 +107,7 @@ fn libcam(file_name: &str) -> Result<(), CatCamError> {
         Ok(_) => log::info!("libcamera-jpeg: {}", file_name),
         Err(e) => {
             log::error!("{:?}", e);
-            return Err(CatCamError::FailureLibcamera);
+            return Err(CatCamError::FailureLibcamera(e));
         }
     }
     Ok(())
