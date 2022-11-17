@@ -17,7 +17,6 @@ pub enum CatCamError {
 
 fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
-
     log::info!("start!");
 
     let mut pir = Gpio::new()?.get(GPIO17)?.into_input();
@@ -25,8 +24,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let line_token =
         env::var("LINE_TOKEN").expect("LINE_TOKEN is empty. Set the access token to LINE_TOKEN");
-    let image_dir = "/tmp/cat-sv";
 
+    let image_dir = "/tmp/cat-sv";
     match std::fs::create_dir(image_dir) {
         Err(e) if e.kind() == ErrorKind::AlreadyExists => log::info!("{}", e),
         Err(e) => {
